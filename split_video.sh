@@ -772,7 +772,7 @@ validate_rename_file() {
 # Find input video file
 find_input_video() {
     # Supported video formats
-    local video_extensions=("mp4" "avi" "mkv" "mov" "wmv" "flv" "webm" "m4v")
+    local video_extensions=("mp4" "avi" "mkv" "mov" "wmv" "flv" "webm" "m4v" "ts")
     
     input_video=""
     for ext in "${video_extensions[@]}"; do
