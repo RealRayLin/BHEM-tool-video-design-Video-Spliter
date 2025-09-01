@@ -634,17 +634,18 @@ get_cut_count() {
             
             # Check if there are enough timestamps for automatic detection
             if [ ${#preview_timestamps[@]} -gt 0 ]; then
-                # Back-to-back cutting: timestamp count = segment count
-                CUT_COUNT=${#preview_timestamps[@]}
+                # Back-to-back cutting: first timestamp is start point, actual segments = timestamp count - 1
+                CUT_COUNT=$((${#preview_timestamps[@]} - 1))
                 printf "$(get_text "auto_detected")\n" "${preview_timestamps[0]}" "$CUT_COUNT"
                 print_info "$(get_text "timestamp_distribution")"
-                for ((i=0; i<${#preview_timestamps[@]}; i++)); do
+                for ((i=0; i<$CUT_COUNT; i++)); do
                     local segment_num=$((i+1))
-                    if [ $i -eq $((${#preview_timestamps[@]} - 1)) ]; then
-                        printf "  $(get_text "segment_to_end")\n" "$segment_num" "${preview_timestamps[$i]}"
+                    local start_time="${preview_timestamps[$i]}"
+                    if [ $i -eq $((CUT_COUNT - 1)) ]; then
+                        printf "  $(get_text "segment_to_end")\n" "$segment_num" "$start_time"
                     else
-                        local next_time="${preview_timestamps[$((i+1))]}"
-                        printf "  $(get_text "segment_range")\n" "$segment_num" "${preview_timestamps[$i]}" "$next_time"
+                        local end_time="${preview_timestamps[$((i+1))]}"
+                        printf "  $(get_text "segment_range")\n" "$segment_num" "$start_time" "$end_time"
                     fi
                 done
             else
@@ -696,15 +697,16 @@ validate_timestamp_file() {
         exit 1
     fi
     
-    if [ $CUT_COUNT -gt $timestamp_count ]; then
-        local error_msg=$(printf "$(get_text "cut_count_excessive")" "$timestamp_count" "$timestamp_count" "$CUT_COUNT")
+    local max_segments=$((timestamp_count - 1))
+    if [ $CUT_COUNT -gt $max_segments ]; then
+        local error_msg=$(printf "$(get_text "cut_count_excessive")" "$timestamp_count" "$max_segments" "$CUT_COUNT")
         print_error "$error_msg"
-        local suggestion_msg=$(printf "$(get_text "detected_timestamps")" "$timestamp_count" "$timestamp_count")
+        local suggestion_msg=$(printf "$(get_text "detected_timestamps")" "$timestamp_count" "$max_segments")
         print_info "$suggestion_msg"
         exit 1
     fi
     
-    local validation_msg=$(printf "$(get_text "timestamp_validation_pass")" "$timestamp_count" "$timestamp_count" "$CUT_COUNT")
+    local validation_msg=$(printf "$(get_text "timestamp_validation_pass")" "$timestamp_count" "$max_segments" "$CUT_COUNT")
     print_success "$validation_msg"
     
     # Validate time format and sequence
